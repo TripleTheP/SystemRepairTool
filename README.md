@@ -1,6 +1,6 @@
 # SystemRepairTool
 
-**Version:** 1.2.0  
+**Version:** 1.1.1  
 **Letztes Update:** August 2025
 
 Ein vielseitiges Windows-Wartungstool mit grafischer Oberfläche zur Reparatur, Diagnose und Systempflege.
