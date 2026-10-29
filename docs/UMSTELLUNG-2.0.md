@@ -84,10 +84,10 @@ abschaltbar machen.
 - Release 2.0.0 auf GitHub veröffentlicht, nachdem der Build auf dem Branch `version-2.0` grün war.
 - Das kaputte Release v1.1.1 gelöscht (der Tag `v1.1.1` bleibt; er zeigt auf denselben Stand wie v1.1.2 und v1.1.3).
 - Antrag bei der SignPath Foundation gestellt; die Eingangsbestätigung kam per E-Mail.
+- Test-Branch `version-2.0` gelöscht.
 
 ## Noch offen
 
-1. **Antwort von SignPath abwarten.** Bei einer Zusage die Schritte 3–5 in
-   [signpath-einrichtung.md](signpath-einrichtung.md) abarbeiten; das nächste Release wird dann signiert. Bei einer
-   Absage bleibt alles, wie es ist – ein neuer Antrag lohnt sich, wenn das Projekt mehr Nutzer hat.
-2. **Branch `version-2.0` löschen** (optional). Er war nur zum Testen da und ist vollständig in `main` enthalten.
+- **Antwort von SignPath abwarten.** Bei einer Zusage die Schritte 3–5 in
+  [signpath-einrichtung.md](signpath-einrichtung.md) abarbeiten; das nächste Release wird dann signiert. Bei einer
+  Absage bleibt alles, wie es ist – ein neuer Antrag lohnt sich, wenn das Projekt mehr Nutzer hat.
