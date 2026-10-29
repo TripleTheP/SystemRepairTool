@@ -1,61 +1,73 @@
-# Signierung mit SignPath einrichten
+# Code-Signierung über die SignPath Foundation
 
-Der Release-Workflow (`.github/workflows/release.yml`) ist fertig vorbereitet. Er signiert die `.exe` automatisch,
-sobald die Zugangsdaten von SignPath im Repository hinterlegt sind. Bis dahin entstehen unsignierte Releases mit
-Prüfsummen und Herkunftsnachweis.
+Dieses Dokument beschreibt die Einrichtung der Code-Signierung für SystemRepairTool über das Open-Source-Programm
+der [SignPath Foundation](https://signpath.org).
 
-Warum es sich lohnt: Unsignierte PyInstaller-Programme, die Systembefehle mit Administratorrechten ausführen, werden
-von Windows SmartScreen und Virenscannern häufig gewarnt oder blockiert.
+**Status:** Antrag gestellt am 29.10.2026. Bis zur Bewilligung und Einrichtung werden Releases unsigniert, jedoch mit
+Prüfsummen und Herkunftsnachweis veröffentlicht.
 
-## 1. Voraussetzungen
+## Hintergrund
 
-- Zwei-Faktor-Anmeldung (2FA) für das GitHub-Konto ist aktiv. SignPath verlangt sie für alle Beteiligten.
-- Das Projekt ist öffentlich, steht unter einer Open-Source-Lizenz (GPL-3.0) und hat bereits Releases. Das ist
-  erfüllt.
-- Die README enthält den Abschnitt [Code signing policy](../README.md#code-signing-policy). Das ist ebenfalls
-  erfüllt.
-- Version 2.0.0 ist veröffentlicht, sodass der Quellcode zu den Releases öffentlich nachvollziehbar ist.
+Unsignierte, mit PyInstaller erstellte Programme, die Systembefehle mit Administratorrechten ausführen, werden von
+Windows SmartScreen und Virenscannern häufig als verdächtig eingestuft. Eine Authenticode-Signatur weist den
+Herausgeber nach und reduziert solche Warnungen.
 
-## 2. Antrag stellen
+Der Release-Workflow (`.github/workflows/release.yml`) ist für die Signierung vorbereitet. Sie wird automatisch
+aktiv, sobald die Zugangsdaten im Repository hinterlegt sind.
 
-Formular: <https://signpath.org/apply>
+## Voraussetzungen
+
+| Anforderung | Stand |
+|---|---|
+| Zwei-Faktor-Authentifizierung für alle beteiligten Konten | erforderlich |
+| Öffentliches Repository unter einer OSI-anerkannten Lizenz | erfüllt (GPL-3.0) |
+| Veröffentlichte Releases | erfüllt |
+| Abschnitt „Code signing policy“ in der README | erfüllt |
+| Datenschutzhinweis | erfüllt (README, Abschnitt „Datenschutz“) |
+
+## 1. Antrag
+
+Der Antrag wurde über das Formular unter <https://signpath.org/apply> mit folgenden Angaben gestellt:
 
 | Feld | Angabe |
 | --- | --- |
 | Project name | SystemRepairTool |
-| Repository | https://github.com/TripleTheP/SystemRepairTool |
-| License | GPL-3.0 |
-| Description | Portable Windows maintenance tool with a GUI for DISM/SFC repair, network diagnostics, temp file cleanup and system information |
-| Download page | https://github.com/TripleTheP/SystemRepairTool/releases |
-| Code signing policy | https://github.com/TripleTheP/SystemRepairTool#code-signing-policy |
-| Build system | GitHub Actions (GitHub-hosted runners) |
-| Files to sign | `SystemRepairTool.exe` (built with PyInstaller) |
+| Repository URL | https://github.com/TripleTheP/SystemRepairTool |
+| Homepage URL | https://github.com/TripleTheP/SystemRepairTool |
+| Download URL | https://github.com/TripleTheP/SystemRepairTool#herunterladen-und-starten |
+| Privacy policy URL | https://github.com/TripleTheP/SystemRepairTool#code-signing-policy |
+| Category | Other |
+| Maintainer type | Individual maintainer(s) |
+| Build system | GitHub Actions |
 
-Die Prüfung dauert in der Regel einige Tage bis Wochen. Eine Zusage ist nicht garantiert.
+Die Prüfung durch die SignPath Foundation dauert in der Regel mehrere Tage bis Wochen. Eine Bewilligung ist nicht
+garantiert; maßgeblich ist unter anderem die Verbreitung des Projekts.
 
-## 3. In SignPath (nach der Zusage)
+## 2. Konfiguration in SignPath
 
-1. Im Projekt den vordefinierten Trusted Build System **GitHub.com** verknüpfen.
+Nach der Bewilligung:
+
+1. Im Projekt das vordefinierte Trusted Build System **GitHub.com** verknüpfen.
 2. Unter *Artifact Configurations* den Inhalt von
-   [`.signpath/artifact-configuration.xml`](../.signpath/artifact-configuration.xml) einfügen.
-3. Die Signing Policy für Tests heißt meist `test-signing`, die für Releases `release-signing`.
-4. Einen *CI User* mit der Rolle *Submitter* anlegen und dessen **API-Token** kopieren.
+   [`.signpath/artifact-configuration.xml`](../.signpath/artifact-configuration.xml) hinterlegen.
+3. Die Signing Policies prüfen: `test-signing` für Testläufe, `release-signing` für Releases.
+4. Einen *CI User* mit der Rolle *Submitter* anlegen und dessen API-Token sichern.
 
-## 4. In GitHub hinterlegen
+## 3. Konfiguration in GitHub
 
 Unter *Settings → Secrets and variables → Actions*:
 
-| Art | Name | Wert |
+| Typ | Name | Wert |
 | --- | --- | --- |
 | Secret | `SIGNPATH_API_TOKEN` | API-Token des CI Users |
 | Variable | `SIGNPATH_ORGANIZATION_ID` | Organisations-ID aus SignPath |
-| Variable (nur zum Testen) | `SIGNPATH_SIGNING_POLICY_SLUG` | `test-signing`, danach wieder löschen |
-| Variable (falls nötig) | `SIGNPATH_PROJECT_SLUG` | nur, wenn der Projekt-Slug nicht `SystemRepairTool` ist |
+| Variable (nur für Testläufe) | `SIGNPATH_SIGNING_POLICY_SLUG` | `test-signing`; nach erfolgreichem Test entfernen |
+| Variable (optional) | `SIGNPATH_PROJECT_SLUG` | nur erforderlich, wenn der Projekt-Slug von `SystemRepairTool` abweicht |
 
-## 5. Signiertes Release erzeugen
+## 4. Ablauf eines signierten Releases
 
-1. Version in `src/systemrepairtool/__init__.py` und `version.json` erhöhen, Abschnitt in `CHANGELOG.md` anlegen,
-   auf `main` pushen.
-2. Der Workflow baut und testet, reicht die `.exe` bei SignPath ein und wartet bis zu 60 Minuten auf die Freigabe.
-3. In SignPath den Signing Request **freigeben** (Approve). SignPath schickt dazu eine E-Mail.
-4. Der Workflow prüft die Signatur, packt das ZIP und veröffentlicht das Release.
+1. Version gemäß README (Abschnitt „Veröffentlichung einer neuen Version“) erhöhen und auf `main` übertragen.
+2. Der Workflow führt die Tests aus, erstellt die ausführbare Datei und reicht sie bei SignPath ein. Er wartet
+   bis zu 60 Minuten auf die Freigabe.
+3. Die Signaturanfrage in SignPath freigeben (*Approve*); SignPath benachrichtigt hierzu per E-Mail.
+4. Der Workflow prüft die Signatur, erstellt das Release-Archiv und veröffentlicht das Release.

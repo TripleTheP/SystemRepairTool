@@ -1,93 +1,91 @@
-# Umstellung auf Version 2.0
+# Version 2.0: Hintergrund und technische Änderungen
 
-Stand: 29.10.2026. Dieses Dokument hält fest, was beim Neuaufbau geändert wurde, warum, und was noch von Hand zu
-tun ist.
+Dieses Dokument beschreibt die Gründe für die Neuentwicklung von SystemRepairTool in Version 2.0, die wesentlichen
+technischen Änderungen sowie die Kompatibilität zu früheren Versionen. Eine Übersicht für Anwenderinnen und Anwender
+enthält das [Änderungsprotokoll](../CHANGELOG.md).
 
 ## Ausgangslage
 
-- Im Repository lagen nur `README.md` und `version.json`, kein Quellcode. Die Releases enthielten nur eine mit
-  PyInstaller gebaute `.exe` (Python 3.13, tkinter). Der ursprüngliche Quellcode war nicht mehr auffindbar.
-- Die Tags `v1.1.1`, `v1.1.2` und `v1.1.3` zeigen alle auf denselben Commit, eine reine Änderung an `version.json`.
-- Das Release `v1.1.1` ist kaputt: Die ZIP-Datei ist nur 0,2 MB groß, die `.exe` fehlt.
-- Die `README.txt` in der ZIP von 1.1.3 nannte noch Version 1.1.1.
-- Der Auto-Updater lud die Datei aus `version.json` ohne Prüfsumme oder Signatur. Wer das Repository oder den
-  Download manipuliert, hätte allen Nutzern beliebigen Code unterschieben können, der dann mit
-  Administratorrechten läuft.
+Bis Version 1.1.3 wurde SystemRepairTool ausschließlich als ausführbare Datei veröffentlicht, die mit PyInstaller
+aus Python 3.13 und tkinter erstellt wurde. Der zugehörige Quellcode war nicht Bestandteil des Repositorys und stand
+für die Weiterentwicklung nicht mehr zur Verfügung. Darüber hinaus wies die bisherige Lösung folgende Schwächen auf:
 
-## Was geändert wurde
+- **Update-Mechanismus:** Die Anwendung lud die in `version.json` angegebene Datei ohne Prüfsumme oder Signatur
+  herunter. Eine Manipulation des Repositorys oder des Downloads hätte die Ausführung beliebigen Codes mit
+  Administratorrechten ermöglicht.
+- **Nachvollziehbarkeit:** Releases wurden manuell erstellt. Mehrere Versions-Tags verwiesen auf denselben Commit,
+  und ein Release enthielt ein unvollständiges Archiv.
+- **Vertrauenswürdigkeit:** Ohne veröffentlichten Quellcode und ohne Signatur war die ausführbare Datei weder
+  überprüfbar noch reproduzierbar.
 
-### Quellcode neu geschrieben
+## Vorgehen
 
-Das Programm wurde mit denselben Funktionen neu geschrieben und liegt jetzt offen unter `src/systemrepairtool/`.
-Es braucht nur die Python-Standardbibliothek.
+Die Anwendung wurde mit identischem Funktionsumfang neu entwickelt. Der Quellcode liegt unter
+`src/systemrepairtool/` und verwendet ausschließlich die Python-Standardbibliothek.
 
-| Bereich | Änderung | Grund |
+## Technische Änderungen
+
+### Anwendung
+
+| Bereich | Änderung | Begründung |
 |---|---|---|
-| Ausführung | Befehle laufen in einem eigenen Thread, die Ausgabe erscheint live | Bei DISM (bis 30 Minuten) wirkte das Fenster sonst eingefroren |
-| Ausführung | Abbrechen beendet auch Unterprozesse (`taskkill /T`) | DISM startet `DismHost.exe`, das sonst weiterläuft |
-| Ausführung | Systemprogramme mit vollem Pfad aus System32 | Kein gleichnamiges Programm aus dem Arbeitsordner wird gestartet |
-| Ausgabe | Erkennung von UTF-16 (SFC) und OEM-Codepage (DISM, ipconfig) | Sonst erscheint SFC mit Leerzeichen zwischen allen Buchstaben, Umlaute werden zerstört |
-| Ausgabe | Fortschritt mit `\r` überschreibt die aktuelle Zeile | DISM und SFC würden sonst Hunderte Fortschrittszeilen anhängen |
-| Ping | Freie Adresse, Prüfung auf gültige Zeichen | Eine Eingabe wie `-t` würde ping als Option deuten |
-| Aufräumen | Nur Dateien älter als eine Stunde, gesperrte überspringen, Verknüpfungen nie folgen | Laufende Installationen bleiben intakt; eine Verknüpfung im Temp-Ordner könnte sonst Dateien außerhalb löschen |
-| Aufräumen | Schreibgeschützte Dateien werden entsperrt und gelöscht | Sonst blieben sie dauerhaft liegen |
-| Systeminfo | Windows 11 über die Build-Nummer erkannt | Windows 11 meldet in der Registry weiterhin „Windows 10“ |
-| Updater | Lädt nichts mehr herunter, öffnet nur die Release-Seite; akzeptiert nur Adressen dieses Repositorys | Siehe Ausgangslage: kein Weg mehr, Schadcode über `version.json` einzuschleusen |
-| Rechte | `.exe` fordert Administratorrechte an (UAC-Manifest); ohne sie gibt es einen Hinweis | DISM, SFC und Winsock-Reset brauchen sie |
-| Oberfläche | Protokoll speichern, Abbrechen, Beschreibung jeder Aktion in der Statuszeile | Bedienbarkeit |
+| Ausführung | Systembefehle laufen in einem eigenen Thread; die Ausgabe wird fortlaufend angezeigt. | DISM benötigt bis zu 30 Minuten; die Oberfläche bleibt währenddessen bedienbar. |
+| Ausführung | Beim Abbrechen wird der gesamte Prozessbaum beendet (`taskkill /T`). | DISM startet Unterprozesse (`DismHost.exe`), die andernfalls weiterlaufen. |
+| Ausführung | Systemprogramme werden mit vollständigem Pfad aus System32 aufgerufen. | Verhindert das Starten gleichnamiger Programme aus dem Arbeitsverzeichnis oder dem Suchpfad. |
+| Ausgabe | Automatische Erkennung von UTF-16 (SFC) und OEM-Codepage (DISM, ipconfig). | Ohne Erkennung wird die SFC-Ausgabe fehlerhaft dargestellt und Umlaute gehen verloren. |
+| Ausgabe | Zeilen mit Wagenrücklauf (`\r`) überschreiben die aktuelle Zeile. | DISM und SFC melden ihren Fortschritt auf diese Weise. |
+| Ping | Validierung der Zieladresse. | Eingaben wie `-t` würden andernfalls als Programmoption interpretiert. |
+| Bereinigung | Nur Dateien älter als eine Stunde; gesperrte Dateien werden übersprungen; Verknüpfungen werden nicht verfolgt. | Schutz laufender Installationen und von Daten außerhalb der Temp-Verzeichnisse. |
+| Bereinigung | Schreibgeschützte Dateien werden vor dem Löschen entsperrt. | Solche Dateien würden andernfalls dauerhaft verbleiben. |
+| Systeminformationen | Erkennung von Windows 11 anhand der Build-Nummer. | Windows 11 meldet in der Registrierung weiterhin „Windows 10“. |
+| Update-Prüfung | Kein Download mehr; es wird ausschließlich die Release-Seite dieses Repositorys geöffnet. | Beseitigt die beschriebene Möglichkeit zur Einschleusung von Code. |
+| Berechtigungen | UAC-Manifest fordert Administratorrechte an; ohne diese erscheint ein Hinweis. | DISM, SFC und das Zurücksetzen von Winsock setzen Administratorrechte voraus. |
 
-### Build und Releases automatisiert
+### Build und Veröffentlichung
 
-- `tools/build.py` baut mit PyInstaller die `.exe` (mit Icon und Versionsangaben in den Dateieigenschaften) und die
-  ZIP-Datei mit `.exe`, `tool_icon.ico` und einer aus der Versionsnummer erzeugten `README.txt`. Dazu kommt
-  `SHA256SUMS.txt`.
-- `.github/workflows/build.yml` testet und baut bei jedem Push und Pull Request.
-- `.github/workflows/release.yml` legt automatisch ein Release an, sobald auf `main` eine neue Versionsnummer steht,
-  inklusive Prüfsummen und Herkunftsnachweis (Build Provenance). Die Beschreibung kommt aus `CHANGELOG.md`.
-- Dependabot hält PyInstaller und die GitHub Actions aktuell.
+- `tools/build.py` erstellt die ausführbare Datei (mit Symbol und Versionsinformationen) sowie das Release-Archiv
+  mit Programm, Symbol, Lizenztext und einer aus der Versionsnummer generierten `README.txt`. Zusätzlich wird
+  `SHA256SUMS.txt` erzeugt. Mit `--exe-only` und `--package-only` lassen sich beide Schritte getrennt ausführen,
+  sodass die ausführbare Datei zwischen Build und Paketierung signiert werden kann.
+- `.github/workflows/build.yml` führt bei jeder Änderung die Tests aus und erstellt die Anwendung.
+- `.github/workflows/release.yml` veröffentlicht automatisch ein Release, sobald auf `main` eine neue
+  Versionsnummer vorliegt. Das Release enthält Prüfsummen und einen Herkunftsnachweis; die Beschreibung wird aus
+  dem Änderungsprotokoll übernommen. Sobald die Zugangsdaten der SignPath Foundation hinterlegt sind, wird die
+  ausführbare Datei vor der Veröffentlichung signiert (siehe [signpath-einrichtung.md](signpath-einrichtung.md)).
+- Dependabot hält PyInstaller und die verwendeten GitHub Actions aktuell.
 
-### Eine Quelle für die Version
+### Versionsverwaltung
 
-Die Versionsnummer steht nur noch in `src/systemrepairtool/__init__.py`. Ein Test prüft, dass `version.json` und
-`CHANGELOG.md` dazu passen, damit der Update-Hinweis nie auf ein Release zeigt, das es nicht gibt.
-
-### Kompatibel mit Version 1.1.3
-
-`version.json` behält die Felder `version` und `download_url` und hat zusätzlich `release_url`. Die alte Version
-1.1.3 findet darüber das Update auf 2.0.0. Die ZIP-Datei hat denselben Aufbau wie bisher.
-
-### Tests
-
-34 Tests in `tests/` decken Zeichensatz-Erkennung, Fortschrittszeilen, Adressprüfung, Abbrechen, Aufräumen
-(alt/neu/gesperrt/schreibgeschützt/Verknüpfungen), Updater, Systeminfos, Versionsabgleich und den Aufbau des
-Fensters ab.
+Die Versionsnummer wird ausschließlich in `src/systemrepairtool/__init__.py` gepflegt. Ein automatisierter Test
+stellt sicher, dass `version.json` und das Änderungsprotokoll damit übereinstimmen. Dadurch verweist die
+Update-Prüfung stets auf ein existierendes Release.
 
 ### Lizenz
 
-Der Quellcode steht unter der GNU General Public License, Version 3 (`LICENSE`, unveränderter Text von gnu.org).
-Das Release-ZIP enthält den Lizenztext als `LICENSE.txt`, wie es die GPL für weitergegebene Programme verlangt.
+Der Quellcode steht unter der GNU General Public License, Version 3. Das Release-Archiv enthält den Lizenztext als
+`LICENSE.txt`, wie es die Lizenz für die Weitergabe ausführbarer Programme vorsieht.
 
-### Signierung vorbereitet
+## Kompatibilität
 
-Der Release-Workflow signiert die `.exe` über SignPath, sobald die Zugangsdaten hinterlegt sind; ohne sie entsteht
-wie bisher ein unsigniertes Release. Dafür baut `tools/build.py` die `.exe` und das ZIP auf Wunsch getrennt
-(`--exe-only`, `--package-only`), damit die `.exe` dazwischen signiert werden kann. Die Schritte zum Antrag stehen
-in [signpath-einrichtung.md](signpath-einrichtung.md), die README hat den geforderten Abschnitt
-„Code signing policy“.
+`version.json` behält die Felder `version` und `download_url` bei und ergänzt das Feld `release_url`. Installationen
+der Version 1.1.3 erkennen Version 2.0.0 daher weiterhin als Update. Das Release-Archiv ist wie bisher aufgebaut.
 
-Abweichend von mpp-viewer nennt der Datenschutzhinweis die Update-Prüfung beim Start, denn das Programm ruft dabei
-ohne Zutun des Nutzers `version.json` von GitHub ab. Sollte SignPath darauf bestehen, ließe sich die Prüfung
-abschaltbar machen.
+## Qualitätssicherung
 
-## Erledigt am 29.10.2026
+Die automatisierten Tests in `tests/` umfassen:
 
-- Release 2.0.0 auf GitHub veröffentlicht, nachdem der Build auf dem Branch `version-2.0` grün war.
-- Das kaputte Release v1.1.1 gelöscht (der Tag `v1.1.1` bleibt; er zeigt auf denselben Stand wie v1.1.2 und v1.1.3).
-- Antrag bei der SignPath Foundation gestellt; die Eingangsbestätigung kam per E-Mail.
-- Test-Branch `version-2.0` gelöscht.
+- Zeichensatzerkennung und Verarbeitung von Fortschrittszeilen
+- Validierung von Ping-Zielen sowie Prozessausführung und Abbruch
+- Bereinigung (alte, neue, gesperrte und schreibgeschützte Dateien, symbolische Verknüpfungen)
+- Update-Prüfung einschließlich der Abwehr fremder Adressen
+- Systeminformationen
+- Übereinstimmung von Version, `version.json` und Änderungsprotokoll
+- Aufbau der Oberfläche und Ablauf eines Vorgangs
 
-## Noch offen
+## Status
 
-- **Antwort von SignPath abwarten.** Bei einer Zusage die Schritte 3–5 in
-  [signpath-einrichtung.md](signpath-einrichtung.md) abarbeiten; das nächste Release wird dann signiert. Bei einer
-  Absage bleibt alles, wie es ist – ein neuer Antrag lohnt sich, wenn das Projekt mehr Nutzer hat.
+| Punkt | Stand |
+|---|---|
+| Release 2.0.0 | Veröffentlicht am 29.10.2026 |
+| Unvollständiges Release 1.1.1 | Entfernt |
+| Code-Signierung | Bei der SignPath Foundation beantragt; Workflow vorbereitet |
