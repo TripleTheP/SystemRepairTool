@@ -30,6 +30,7 @@ jobs:
       id-token: write        # Herkunftsnachweis (Attestation)
       attestations: write
     env:
+      PYTHONUTF8: '1'
       SIGNPATH_PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG || 'SystemRepairTool' }}
       SIGNPATH_SIGNING_POLICY_SLUG: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG || 'release-signing' }}
     steps:
@@ -78,7 +79,14 @@ jobs:
         run: python -m pip install -r requirements-build.txt
       - name: Tests
         if: steps.version.outputs.skip == 'false'
-        run: python -m unittest discover -s tests -v
+        shell: bash
+        run: python -m unittest discover -s tests -v 2>&1 | tee test.log
+      - name: Fehlerausgabe als Annotation
+        if: failure()
+        shell: bash
+        run: |
+          msg=$(grep -vE '\.\.\. (ok|skipped.*)$' test.log 2>/dev/null | tail -80 | sed -e 's/%/%25/g' -e 's/\r//g' | awk 'BEGIN{ORS="%0A"} {print}')
+          echo "::error title=Tests::$msg"
       - name: .exe bauen
         if: steps.version.outputs.skip == 'false'
         run: python tools/build.py --exe-only
