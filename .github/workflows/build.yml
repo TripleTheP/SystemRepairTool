@@ -1,8 +1,8 @@
 name: Build
 
+# Bei jedem Push, auch auf Arbeits-Branches – so lässt sich die .exe vor dem Release ausprobieren
 on:
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 
