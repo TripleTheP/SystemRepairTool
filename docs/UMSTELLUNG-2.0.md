@@ -79,14 +79,15 @@ Abweichend von mpp-viewer nennt der Datenschutzhinweis die Update-Prüfung beim 
 ohne Zutun des Nutzers `version.json` von GitHub ab. Sollte SignPath darauf bestehen, ließe sich die Prüfung
 abschaltbar machen.
 
-## Noch offen (von Hand)
+## Erledigt am 29.10.2026
 
-1. **Prüfen und pushen.** Die Änderungen sind bisher nur lokal committet. Zum Ausprobieren auf einen eigenen Branch
-   pushen (`git push origin main:version-2.0`); der Build läuft dann auf GitHub und stellt die `.exe` unter
-   *Actions → Build → Artifacts* bereit, ohne ein Release anzulegen. Beim Push auf `main` entsteht automatisch das
-   Release 2.0.0. Bis es fertig ist (einige Minuten), zeigt `version.json` schon auf 2.0.0 – Nutzer von 1.1.3,
-   die genau dann starten, bekämen kurz einen Link, der noch nicht funktioniert.
-2. **Release v1.1.1 löschen.** Auf GitHub unter *Releases → v1.1.1 → Löschen (Mülleimer-Symbol)*. Die ZIP-Datei
-   darin ist kaputt.
-3. **SignPath beantragen** (optional), siehe [signpath-einrichtung.md](signpath-einrichtung.md). Am besten erst
-   nach dem Release 2.0.0.
+- Release 2.0.0 auf GitHub veröffentlicht, nachdem der Build auf dem Branch `version-2.0` grün war.
+- Das kaputte Release v1.1.1 gelöscht (der Tag `v1.1.1` bleibt; er zeigt auf denselben Stand wie v1.1.2 und v1.1.3).
+- Antrag bei der SignPath Foundation gestellt; die Eingangsbestätigung kam per E-Mail.
+
+## Noch offen
+
+1. **Antwort von SignPath abwarten.** Bei einer Zusage die Schritte 3–5 in
+   [signpath-einrichtung.md](signpath-einrichtung.md) abarbeiten; das nächste Release wird dann signiert. Bei einer
+   Absage bleibt alles, wie es ist – ein neuer Antrag lohnt sich, wenn das Projekt mehr Nutzer hat.
+2. **Branch `version-2.0` löschen** (optional). Er war nur zum Testen da und ist vollständig in `main` enthalten.
