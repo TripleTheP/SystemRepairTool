@@ -35,6 +35,32 @@ GitHub, der belegt, dass die Datei aus genau diesem Quellcode gebaut wurde:
 Gelöscht wird nur, was älter als eine Stunde ist. Dateien, die gerade ein Programm benutzt, bleiben liegen, ebenso
 Verknüpfungen in andere Ordner – denen folgt das Tool nie. Die Ordner `Temp` selbst bleiben erhalten.
 
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by
+[SignPath Foundation](https://signpath.org) – sobald die Aufnahme bewilligt ist; bis dahin sind die Releases nicht
+signiert.
+
+- Signiert wird nur `SystemRepairTool_vX.Y.Z.exe`. Sie wird von GitHub Actions aus dem öffentlichen Quellcode dieses
+  Repositorys gebaut. Jede Signatur muss einzeln von einem Approver freigegeben werden.
+- Die mit PyInstaller eingebundenen Fremdkomponenten (Python-Laufzeit, Tcl/Tk) werden nicht einzeln mit dem
+  Projektzertifikat signiert.
+
+| Rolle | Mitglieder |
+| --- | --- |
+| Committer und Reviewer | [TripleTheP](https://github.com/TripleTheP) |
+| Approver | [TripleTheP](https://github.com/TripleTheP) |
+
+**Datenschutz / Privacy:** Beim Start fragt das Programm einmal die Datei
+`https://raw.githubusercontent.com/TripleTheP/SystemRepairTool/main/version.json` ab, um auf neue Versionen
+hinzuweisen. Dabei werden nur die bei jedem Webseitenaufruf üblichen Daten übertragen (IP-Adresse und die
+Programmversion als User-Agent). Darüber hinaus überträgt das Programm keine Informationen an andere Systeme im
+Netzwerk, sofern dies nicht ausdrücklich von der Benutzerin oder dem Benutzer veranlasst wird (z. B. Ping, oder die
+DISM-Reparatur, die Dateien über Windows Update lädt).
+On startup the program fetches the file above once to check for a newer version; only the data inherent to any
+web request is transmitted (IP address, program version as user agent). Apart from that, this program will not
+transfer any information to other networked systems unless specifically requested by the user.
+
 ## Selbst bauen
 
 Voraussetzung: Python 3.13 für Windows (mit tkinter, ist im Installer von python.org enthalten).
@@ -62,8 +88,15 @@ python tools/build.py                            # .exe und ZIP in dist/release
 | `src/systemrepairtool/cleanup.py` | Temporäre Dateien |
 | `src/systemrepairtool/sysinfo.py` | Systeminformationen |
 | `src/systemrepairtool/updater.py` | Prüfung auf neue Versionen |
-| `tools/build.py` | Build der .exe mit PyInstaller |
+| `tools/build.py` | Build der .exe mit PyInstaller und Verpacken als ZIP |
+| `docs/signpath-einrichtung.md` | Signierung der Releases einrichten |
 | `version.json` | Aktuelle Version für den Update-Hinweis |
+
+## Lizenz
+
+Copyright © 2025–2026 TripleTheP. SystemRepairTool ist freie Software unter der
+[GNU General Public License, Version 3](LICENSE): Du darfst es nutzen, ändern und weitergeben; geänderte Versionen
+müssen ebenfalls unter der GPL-3.0 mit Quellcode weitergegeben werden. Ohne jede Gewährleistung.
 
 ---
 
@@ -75,4 +108,4 @@ running actions can be cancelled and the log can be saved.
 
 Download the latest ZIP from [Releases](https://github.com/TripleTheP/SystemRepairTool/releases), unzip and run the
 `.exe` (it asks for administrator rights). Each release ships with `SHA256SUMS.txt` and a GitHub build provenance
-attestation. To build from source, see *Selbst bauen* above.
+attestation. To build from source, see *Selbst bauen* above. Licensed under the [GPL-3.0](LICENSE).

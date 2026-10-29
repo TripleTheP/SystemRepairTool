@@ -62,13 +62,31 @@ Die Versionsnummer steht nur noch in `src/systemrepairtool/__init__.py`. Ein Tes
 (alt/neu/gesperrt/schreibgeschützt/Verknüpfungen), Updater, Systeminfos, Versionsabgleich und den Aufbau des
 Fensters ab.
 
+### Lizenz
+
+Der Quellcode steht unter der GNU General Public License, Version 3 (`LICENSE`, unveränderter Text von gnu.org).
+Das Release-ZIP enthält den Lizenztext als `LICENSE.txt`, wie es die GPL für weitergegebene Programme verlangt.
+
+### Signierung vorbereitet
+
+Der Release-Workflow signiert die `.exe` über SignPath, sobald die Zugangsdaten hinterlegt sind; ohne sie entsteht
+wie bisher ein unsigniertes Release. Dafür baut `tools/build.py` die `.exe` und das ZIP auf Wunsch getrennt
+(`--exe-only`, `--package-only`), damit die `.exe` dazwischen signiert werden kann. Die Schritte zum Antrag stehen
+in [signpath-einrichtung.md](signpath-einrichtung.md), die README hat den geforderten Abschnitt
+„Code signing policy“.
+
+Abweichend von mpp-viewer nennt der Datenschutzhinweis die Update-Prüfung beim Start, denn das Programm ruft dabei
+ohne Zutun des Nutzers `version.json` von GitHub ab. Sollte SignPath darauf bestehen, ließe sich die Prüfung
+abschaltbar machen.
+
 ## Noch offen (von Hand)
 
-1. **Prüfen und pushen.** Die Änderungen sind bisher nur lokal committet. Beim Push auf `main` entsteht automatisch
-   das Release 2.0.0. Bis es fertig ist (einige Minuten), zeigt `version.json` schon auf 2.0.0 – Nutzer von 1.1.3,
+1. **Prüfen und pushen.** Die Änderungen sind bisher nur lokal committet. Zum Ausprobieren auf einen eigenen Branch
+   pushen (`git push origin main:version-2.0`); der Build läuft dann auf GitHub und stellt die `.exe` unter
+   *Actions → Build → Artifacts* bereit, ohne ein Release anzulegen. Beim Push auf `main` entsteht automatisch das
+   Release 2.0.0. Bis es fertig ist (einige Minuten), zeigt `version.json` schon auf 2.0.0 – Nutzer von 1.1.3,
    die genau dann starten, bekämen kurz einen Link, der noch nicht funktioniert.
-2. **Release v1.1.1 aufräumen.** Die kaputte ZIP-Datei auf GitHub löschen oder das Release als fehlerhaft
-   kennzeichnen.
-3. **Lizenz wählen.** Ohne `LICENSE`-Datei darf niemand den Code weiterverwenden. Üblich wären MIT oder GPL-3.0.
-4. **Signieren (optional).** Unsignierte PyInstaller-Programme, die Systembefehle ausführen, werden von SmartScreen
-   und Virenscannern oft blockiert. Wie bei mpp-viewer ginge das kostenlos über die SignPath Foundation.
+2. **Release v1.1.1 löschen.** Auf GitHub unter *Releases → v1.1.1 → Löschen (Mülleimer-Symbol)*. Die ZIP-Datei
+   darin ist kaputt.
+3. **SignPath beantragen** (optional), siehe [signpath-einrichtung.md](signpath-einrichtung.md). Am besten erst
+   nach dem Release 2.0.0.

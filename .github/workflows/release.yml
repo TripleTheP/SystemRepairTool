@@ -3,6 +3,11 @@ name: Release
 # Ein Release entsteht automatisch, sobald auf main eine neue Version in src/systemrepairtool/__init__.py steht.
 # Bereits vorhandene Releases werden nicht verändert. version.json muss im selben Commit auf die neue Version zeigen
 # (das prüft ein Test), damit der Update-Hinweis älterer Versionen direkt auf das neue Release führt.
+#
+# Signierung über SignPath (kostenlose Open-Source-Signierung der SignPath Foundation, siehe
+# docs/signpath-einrichtung.md): aktiv, sobald das Repository-Secret SIGNPATH_API_TOKEN und die Repository-Variable
+# SIGNPATH_ORGANIZATION_ID gesetzt sind. Optional: SIGNPATH_PROJECT_SLUG (Standard: SystemRepairTool) und
+# SIGNPATH_SIGNING_POLICY_SLUG (Standard: release-signing). Ohne diese Angaben entsteht ein unsigniertes Release.
 on:
   push:
     branches: [main]
@@ -18,10 +23,15 @@ jobs:
   release:
     name: Release bauen und veröffentlichen
     runs-on: windows-latest
+    timeout-minutes: 120
     permissions:
       contents: write        # Release anlegen
+      actions: read          # SignPath lädt das Artefakt aus diesem Lauf
       id-token: write        # Herkunftsnachweis (Attestation)
       attestations: write
+    env:
+      SIGNPATH_PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG || 'SystemRepairTool' }}
+      SIGNPATH_SIGNING_POLICY_SLUG: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG || 'release-signing' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -47,15 +57,82 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Signierung eingerichtet?
+        id: signpath
+        if: steps.version.outputs.skip == 'false'
+        shell: bash
+        env:
+          TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          ORG: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$ORG" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "SignPath-Signierung aktiv (Projekt $SIGNPATH_PROJECT_SLUG, Richtlinie $SIGNPATH_SIGNING_POLICY_SLUG)."
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::SignPath ist nicht eingerichtet – das Release wird nicht signiert."
+          fi
+
       - name: Abhängigkeiten
         if: steps.version.outputs.skip == 'false'
         run: python -m pip install -r requirements-build.txt
       - name: Tests
         if: steps.version.outputs.skip == 'false'
         run: python -m unittest discover -s tests -v
-      - name: Bauen
+      - name: .exe bauen
         if: steps.version.outputs.skip == 'false'
-        run: python tools/build.py
+        run: python tools/build.py --exe-only
+
+      # SignPath erkennt die Datei über einen festen Namen (siehe .signpath/artifact-configuration.xml)
+      - name: Unsignierte .exe bereitstellen
+        if: steps.version.outputs.skip == 'false' && steps.signpath.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          mkdir -p build/unsigned
+          cp "dist/SystemRepairTool_v${{ steps.version.outputs.version }}.exe" build/unsigned/SystemRepairTool.exe
+      - name: Unsignierte .exe hochladen
+        id: upload-unsigned
+        if: steps.version.outputs.skip == 'false' && steps.signpath.outputs.enabled == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: SystemRepairTool-${{ steps.version.outputs.version }}-unsigned
+          path: build/unsigned
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Mit SignPath signieren (wartet auf Freigabe)
+        if: steps.version.outputs.skip == 'false' && steps.signpath.outputs.enabled == 'true'
+        uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092 # v3.0
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ env.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ env.SIGNPATH_SIGNING_POLICY_SLUG }}
+          github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: build/signed
+          parameters: |
+            version: ${{ toJSON(steps.version.outputs.version) }}
+
+      - name: Signierte .exe übernehmen und prüfen
+        if: steps.version.outputs.skip == 'false' && steps.signpath.outputs.enabled == 'true'
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $exe = "dist/SystemRepairTool_v$env:VERSION.exe"
+          Copy-Item build/signed/SystemRepairTool.exe $exe -Force
+          $sig = Get-AuthenticodeSignature $exe
+          Write-Host "Signatur: $($sig.Status) – $($sig.SignerCertificate.Subject)"
+          Write-Host "Zeitstempel: $($sig.TimeStamperCertificate.Subject)"
+          if ($env:SIGNPATH_SIGNING_POLICY_SLUG -eq 'release-signing' -and $sig.Status -ne 'Valid') {
+            throw "$exe ist nicht gültig signiert ($($sig.Status))."
+          }
+
+      - name: Verpacken
+        if: steps.version.outputs.skip == 'false'
+        run: python tools/build.py --package-only
 
       - name: Herkunftsnachweis
         if: steps.version.outputs.skip == 'false'
@@ -71,8 +148,26 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
+          SIGNED: ${{ steps.signpath.outputs.enabled }}
         run: |
           python tools/release_notes.py "$VERSION" build/notes.md
-          gh release create "v$VERSION" dist/release/* \
-            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "SystemRepairTool $VERSION" --notes-file build/notes.md
+          {
+            echo
+            echo "### Echtheit prüfen"
+            if [ "$SIGNED" = "true" ]; then
+              echo "- Die .exe ist digital signiert (Herausgeber: SignPath Foundation)."
+              echo "  Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org)."
+            else
+              echo "- Diese Version ist **nicht** digital signiert."
+            fi
+            echo "- SHA-256-Prüfsummen: \`SHA256SUMS.txt\` – in PowerShell: \`Get-FileHash SystemRepairTool_v$VERSION.zip\`"
+            echo "- Herkunftsnachweis (gebaut von GitHub Actions aus diesem Repository):"
+            echo "  \`gh attestation verify SystemRepairTool_v$VERSION.zip --repo $GITHUB_REPOSITORY\`"
+          } >> build/notes.md
+          if ! out=$(gh release create "v$VERSION" dist/release/* \
+              --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "SystemRepairTool $VERSION" --notes-file build/notes.md 2>&1); then
+            echo "::error title=gh release create::$(echo "$out" | tr '\r\n' '  ')"
+            exit 1
+          fi
+          echo "$out"

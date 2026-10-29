@@ -25,7 +25,8 @@ zuverlässiger und sicherer.
 - Jedes Release enthält SHA256-Prüfsummen und einen Herkunftsnachweis von GitHub.
 
 **Projekt**
-- Quellcode, automatische Tests und automatischer Build mit GitHub Actions.
+- Quellcode unter der GNU General Public License, Version 3.
+- Automatische Tests und automatischer Build mit GitHub Actions.
 - Releases entstehen automatisch, sobald die Versionsnummer auf main steigt.
 
 ## 1.1.3 – 2025-08-21

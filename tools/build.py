@@ -1,7 +1,10 @@
 """Baut die portable .exe und das Release-ZIP: python tools/build.py
 
 Voraussetzung: pip install -r requirements-build.txt
-Ergebnis in dist/release: SystemRepairTool_vX.Y.Z.zip (exe, Icon, README.txt) und SHA256SUMS.txt."""
+Ergebnis in dist/release: SystemRepairTool_vX.Y.Z.zip (exe, Icon, Lizenz, README.txt) und SHA256SUMS.txt.
+
+--exe-only      nur dist/SystemRepairTool_vX.Y.Z.exe bauen
+--package-only  nur die vorhandene .exe verpacken (z. B. nach dem Signieren)"""
 
 import hashlib
 import os
@@ -37,6 +40,11 @@ Die Prüfsummen stehen in SHA256SUMS.txt beim Release. In PowerShell:
 
 Quellcode, Änderungen und neue Versionen:
 https://github.com/{repo}
+
+Lizenz
+------
+Copyright (C) 2025-2026 TripleTheP
+Freie Software unter der GNU General Public License, Version 3 (siehe LICENSE.txt). Ohne jede Gewährleistung.
 """
 
 VERSION_INFO = """VSVersionInfo(
@@ -74,7 +82,7 @@ def version_file() -> Path:
     return path
 
 
-def main():
+def build_exe() -> Path:
     BUILD.mkdir(exist_ok=True)
     subprocess.run([
         sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "--onefile", "--windowed",
@@ -89,14 +97,17 @@ def main():
         "--distpath", str(DIST),
         str(ROOT / "run.py"),
     ], check=True, cwd=ROOT)
+    return DIST / f"{NAME}.exe"
 
-    exe = DIST / f"{NAME}.exe"
+
+def package(exe: Path):
     RELEASE.mkdir(parents=True, exist_ok=True)
     archive = RELEASE / f"{NAME}.zip"
     readme = README.format(version=__version__, name=NAME, repo=REPO).replace("\n", "\r\n")
     with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as z:
         z.write(exe, exe.name)
         z.write(ICON, ICON.name)
+        z.write(ROOT / "LICENSE", "LICENSE.txt")  # die GPL verlangt den Lizenztext beim Programm
         z.writestr("README.txt", readme.encode("utf-8-sig"))  # mit BOM, damit der Editor die Umlaute erkennt
     sums = "".join(f"{sha256(p)}  {p.name}\n" for p in (archive, exe))
     (RELEASE / "SHA256SUMS.txt").write_text(sums, encoding="utf-8", newline="\n")
@@ -104,5 +115,13 @@ def main():
     print(sums, end="")
 
 
+def main(args: list[str]):
+    # Der Release-Workflow trennt beides, um die .exe dazwischen signieren zu lassen
+    if "--package-only" not in args:
+        build_exe()
+    if "--exe-only" not in args:
+        package(DIST / f"{NAME}.exe")
+
+
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])
