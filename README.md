@@ -1,75 +1,78 @@
 # SystemRepairTool
 
-**Version:** 1.1.3 
-**Letztes Update:** 21.08.2025
+[![Build](https://github.com/TripleTheP/SystemRepairTool/actions/workflows/build.yml/badge.svg)](https://github.com/TripleTheP/SystemRepairTool/actions/workflows/build.yml)
 
-Ein vielseitiges Windows-Wartungstool mit grafischer Oberfläche zur Reparatur, Diagnose und Systempflege.
+Ein portables Windows-Wartungstool mit grafischer Oberfläche zur Reparatur, Diagnose und Systempflege – ohne
+Installation. *English below.*
 
-Das Programm ist portabel und benötigt keinerlei Festinstallation.
+## Funktionen
 
-## 🔧 Funktionen
+| Bereich | Aktion |
+|---|---|
+| Reparatur | DISM: Windows-Abbild prüfen (`/ScanHealth`) und reparieren (`/RestoreHealth`), SFC (`/scannow`) |
+| Netzwerk | IP-Konfiguration, DNS-Cache leeren, Winsock zurücksetzen, Ping an eine beliebige Adresse |
+| Aufräumen | Temporäre Dateien in `Windows\Temp` und `AppData\Local\Temp` löschen |
+| System | Windows-Version, Prozessor, Arbeitsspeicher, Systemlaufwerk, Laufzeit |
 
-- DISM / SFC Reparaturbefehle
-- Netzwerkdiagnose (IP-Konfiguration, Ping, Winsock-Reset)
-- DNS-Cache leeren
-- Temporäre Dateien löschen (Windows\Temp & AppData\Local\Temp)
-- Systeminformationen anzeigen
-- Auto-Updater über GitHub
-- Modernes Dark-Mode-Design
-- Portable `.exe` mit Icon
+- Die Ausgabe erscheint live, Fortschrittsanzeigen werden in einer Zeile aktualisiert.
+- Laufende Aktionen lassen sich abbrechen, das Protokoll lässt sich als Textdatei speichern.
+- Beim Start prüft das Programm, ob es eine neue Version gibt, und verlinkt dann die Release-Seite.
+- Dunkles Design.
 
-## 📦 Installation
+## Herunterladen und starten
 
-1. Lade die aktuelle Version unter [Releases](https://github.com/TripleTheP/SystemRepairTool/releases) herunter.
-2. Entpacke die ZIP-Datei.
-3. Starte die `.exe` direkt oder erstelle eine Desktop-Verknüpfung.
-4. (Optional) Icon ändern: Rechtsklick auf Verknüpfung → Eigenschaften → Anderes Symbol → `tool_icon.ico`
+1. Unter [Releases](https://github.com/TripleTheP/SystemRepairTool/releases) die aktuelle ZIP-Datei laden.
+2. Entpacken und `SystemRepairTool_vX.Y.Z.exe` starten. Windows fragt nach Administratorrechten – die brauchen
+   DISM, SFC und der Winsock-Reset.
 
-## 🆙 Updates
+**Echtheit prüfen:** Zu jedem Release gehört `SHA256SUMS.txt`. Vergleichen mit
+`Get-FileHash .\SystemRepairTool_vX.Y.Z.zip` in PowerShell. Außerdem hat jedes Release einen Herkunftsnachweis von
+GitHub, der belegt, dass die Datei aus genau diesem Quellcode gebaut wurde:
+`gh attestation verify SystemRepairTool_vX.Y.Z.zip --repo TripleTheP/SystemRepairTool`.
 
-Das Tool prüft automatisch beim Start, ob eine neue Version verfügbar ist. Die Update-Informationen werden aus der `version.json` im Repository geladen.
+## Was beim Aufräumen passiert
 
-## 📁 Repository-Inhalte
+Gelöscht wird nur, was älter als eine Stunde ist. Dateien, die gerade ein Programm benutzt, bleiben liegen, ebenso
+Verknüpfungen in andere Ordner – denen folgt das Tool nie. Die Ordner `Temp` selbst bleiben erhalten.
 
-- `SystemRepairTool_vX.X.X.exe` – aktuelle Version
-- `version.json` – für Auto-Updater
-- `README.md` – diese Datei
+## Selbst bauen
 
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Voraussetzung: Python 3.13 für Windows (mit tkinter, ist im Installer von python.org enthalten).
 
-# SystemRepairTool
+```powershell
+python run.py                                   # aus dem Quellcode starten
+python -m unittest discover -s tests -v          # Tests
+python -m pip install -r requirements-build.txt
+python tools/build.py                            # .exe und ZIP in dist/release
+```
 
-**Version:** 1.1.3 
-**Last update:** 08/21/2025
+## Neue Version veröffentlichen
 
-A versatile Windows maintenance tool with a graphical user interface for repair, diagnosis, and system maintenance.
+1. Versionsnummer in [`src/systemrepairtool/__init__.py`](src/systemrepairtool/__init__.py) erhöhen.
+2. [`version.json`](version.json) auf dieselbe Version setzen und in [`CHANGELOG.md`](CHANGELOG.md) einen Abschnitt
+   dafür anlegen (ein Test prüft beides).
+3. Auf `main` pushen. GitHub Actions testet, baut und legt das Release samt Prüfsummen an.
 
-The program is portable and does not require any permanent installation.
+## Aufbau
 
-## 🔧 Features
+| Datei | Inhalt |
+|---|---|
+| `src/systemrepairtool/app.py` | Oberfläche |
+| `src/systemrepairtool/commands.py` | Systembefehle, Ausführung mit Live-Ausgabe, Zeichensatz-Erkennung |
+| `src/systemrepairtool/cleanup.py` | Temporäre Dateien |
+| `src/systemrepairtool/sysinfo.py` | Systeminformationen |
+| `src/systemrepairtool/updater.py` | Prüfung auf neue Versionen |
+| `tools/build.py` | Build der .exe mit PyInstaller |
+| `version.json` | Aktuelle Version für den Update-Hinweis |
 
-- DISM / SFC repair commands
-- Network diagnostics (IP configuration, ping, Winsock reset)
-- Clear DNS cache
-- Delete temporary files (Windows\Temp & AppData\Local\Temp)
-- Display system information
-- Auto-updater via GitHub
-- Modern dark mode design
-- Portable `.exe` with icon
+---
 
-## 📦 Installation
+## English
 
-1. Download the latest version from [Releases](https://github.com/TripleTheP/SystemRepairTool/releases).
-2. Unzip the ZIP file.
-3. Run the `.exe` directly or create a desktop shortcut.
-4. (Optional) Change icon: Right-click on shortcut → Properties → Change Icon → `tool_icon.ico`
+A portable Windows maintenance tool with a graphical interface: DISM and SFC repair, network diagnostics (IP
+configuration, DNS flush, Winsock reset, ping), temp file cleanup and system information. Output is shown live,
+running actions can be cancelled and the log can be saved.
 
-## 🆙 Updates
-
-The tool automatically checks for new versions when it starts. The update information is loaded from `version.json` in the repository.
-
-## 📁 Repository contents
-
-- `SystemRepairTool_vX.X.X.exe` – current version
-- `version.json` – for auto-updater
-- `README.md` – this file
+Download the latest ZIP from [Releases](https://github.com/TripleTheP/SystemRepairTool/releases), unzip and run the
+`.exe` (it asks for administrator rights). Each release ships with `SHA256SUMS.txt` and a GitHub build provenance
+attestation. To build from source, see *Selbst bauen* above.

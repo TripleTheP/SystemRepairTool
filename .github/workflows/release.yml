@@ -1,0 +1,78 @@
+name: Release
+
+# Ein Release entsteht automatisch, sobald auf main eine neue Version in src/systemrepairtool/__init__.py steht.
+# Bereits vorhandene Releases werden nicht verändert. version.json muss im selben Commit auf die neue Version zeigen
+# (das prüft ein Test), damit der Update-Hinweis älterer Versionen direkt auf das neue Release führt.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release bauen und veröffentlichen
+    runs-on: windows-latest
+    permissions:
+      contents: write        # Release anlegen
+      id-token: write        # Herkunftsnachweis (Attestation)
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: requirements-build.txt
+
+      - name: Version ermitteln
+        id: version
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(python -c "import sys; sys.path.insert(0, 'src'); import systemrepairtool; print(systemrepairtool.__version__)")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "v$version" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "Release v$version gibt es schon – nichts zu tun."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Abhängigkeiten
+        if: steps.version.outputs.skip == 'false'
+        run: python -m pip install -r requirements-build.txt
+      - name: Tests
+        if: steps.version.outputs.skip == 'false'
+        run: python -m unittest discover -s tests -v
+      - name: Bauen
+        if: steps.version.outputs.skip == 'false'
+        run: python tools/build.py
+
+      - name: Herkunftsnachweis
+        if: steps.version.outputs.skip == 'false'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            dist/release/*.zip
+            dist/*.exe
+
+      - name: Release anlegen
+        if: steps.version.outputs.skip == 'false'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          python tools/release_notes.py "$VERSION" build/notes.md
+          gh release create "v$VERSION" dist/release/* \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "SystemRepairTool $VERSION" --notes-file build/notes.md

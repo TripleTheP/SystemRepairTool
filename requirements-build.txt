@@ -1,0 +1,2 @@
+# Nur zum Bauen der .exe; das Programm selbst braucht nichts außer der Python-Standardbibliothek
+pyinstaller==6.22.3
