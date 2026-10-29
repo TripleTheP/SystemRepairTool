@@ -67,7 +67,7 @@ Voraussetzung: Python 3.13 für Windows (mit tkinter, ist im Installer von pytho
 
 ```powershell
 python run.py                                   # aus dem Quellcode starten
-python -m unittest discover -s tests -v          # Tests
+python -m unittest discover -s tests -t . -v          # Tests
 python -m pip install -r requirements-build.txt
 python tools/build.py                            # .exe und ZIP in dist/release
 ```
