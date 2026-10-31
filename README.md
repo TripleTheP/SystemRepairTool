@@ -36,7 +36,8 @@ Weitere Eigenschaften:
 1. Die aktuelle ZIP-Datei von der [Release-Seite](https://github.com/TripleTheP/SystemRepairTool/releases/latest)
    herunterladen.
 2. Das Archiv an einen beliebigen Ort entpacken.
-3. `SystemRepairTool_vX.Y.Z.exe` starten. Die Anwendung fordert beim Start Administratorrechte an.
+3. `SystemRepairTool_vX.Y.Z.exe` starten. Die Anwendung fordert beim Start Administratorrechte an. Zu einer
+   möglichen SmartScreen-Warnung siehe [Code-Signierung](#code-signierung).
 
 ### Integrität prüfen
 
@@ -72,26 +73,20 @@ die Programmversion als User-Agent). Darüber hinaus überträgt die Anwendung k
 sofern dies nicht ausdrücklich durch die Benutzerin oder den Benutzer veranlasst wird – etwa durch einen Ping oder
 durch die DISM-Reparatur, die Dateien über Windows Update bezieht.
 
-## Code signing policy
+*On startup the program fetches the file above once to check for a newer version; only the data inherent to any web
+request is transmitted (IP address, program version as user agent). Apart from that, this program will not transfer
+any information to other networked systems unless specifically requested by the user or the person installing or
+operating it.*
 
-Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by
-[SignPath Foundation](https://signpath.org). Die Aufnahme in das Programm der SignPath Foundation ist beantragt;
-bis zur Bewilligung werden die Releases unsigniert veröffentlicht.
+## Code-Signierung
 
-- Signiert wird ausschließlich `SystemRepairTool_vX.Y.Z.exe`. Die Datei wird von GitHub Actions aus dem öffentlichen
-  Quellcode dieses Repositorys gebaut. Jede Signatur erfordert eine einzelne Freigabe durch einen Approver.
-- Die über PyInstaller eingebundenen Fremdkomponenten (Python-Laufzeit, Tcl/Tk) werden nicht gesondert mit dem
-  Projektzertifikat signiert.
+Die Releases sind derzeit nicht digital signiert. Windows SmartScreen kann deshalb beim ersten Start eine Warnung
+anzeigen; mit **Weitere Informationen → Trotzdem ausführen** wird das Programm gestartet. Die Echtheit eines
+Downloads lässt sich über die Prüfsummen und den Herkunftsnachweis belegen (siehe
+[Integrität prüfen](#integrität-prüfen)).
 
-| Rolle | Mitglieder |
-| --- | --- |
-| Committer und Reviewer | [TripleTheP](https://github.com/TripleTheP) |
-| Approver | [TripleTheP](https://github.com/TripleTheP) |
-
-**Privacy policy:** On startup the program fetches the file named under *Datenschutz* once to check for a newer
-version; only the data inherent to any web request is transmitted (IP address, program version as user agent).
-Apart from that, this program will not transfer any information to other networked systems unless specifically
-requested by the user or the person installing or operating it.
+Der Release-Workflow ist für eine Authenticode-Signierung vorbereitet und kann aktiviert werden, sobald ein
+Zertifikat zur Verfügung steht.
 
 ## Entwicklung
 
@@ -117,7 +112,7 @@ python tools/build.py                              # .exe und ZIP-Archiv in dist
 3. Änderungen auf `main` übertragen. GitHub Actions führt die Tests aus, baut die Anwendung und veröffentlicht das
    Release einschließlich Prüfsummen und Herkunftsnachweis.
 
-Die Einrichtung der Code-Signierung ist in [`docs/signpath-einrichtung.md`](docs/signpath-einrichtung.md)
+Die vorbereitete Code-Signierung ist in [`docs/signpath-einrichtung.md`](docs/signpath-einrichtung.md)
 beschrieben, die Hintergründe zur Version 2.0 in [`docs/UMSTELLUNG-2.0.md`](docs/UMSTELLUNG-2.0.md).
 
 ### Projektstruktur

@@ -50,8 +50,9 @@ Die Anwendung wurde mit identischem Funktionsumfang neu entwickelt. Der Quellcod
 - `.github/workflows/build.yml` führt bei jeder Änderung die Tests aus und erstellt die Anwendung.
 - `.github/workflows/release.yml` veröffentlicht automatisch ein Release, sobald auf `main` eine neue
   Versionsnummer vorliegt. Das Release enthält Prüfsummen und einen Herkunftsnachweis; die Beschreibung wird aus
-  dem Änderungsprotokoll übernommen. Sobald die Zugangsdaten der SignPath Foundation hinterlegt sind, wird die
-  ausführbare Datei vor der Veröffentlichung signiert (siehe [signpath-einrichtung.md](signpath-einrichtung.md)).
+  dem Änderungsprotokoll übernommen. Der Workflow ist für eine Signierung über die SignPath Foundation vorbereitet;
+  sie wird aktiv, sobald entsprechende Zugangsdaten hinterlegt sind (siehe
+  [signpath-einrichtung.md](signpath-einrichtung.md)).
 - Dependabot hält PyInstaller und die verwendeten GitHub Actions aktuell.
 
 ### Versionsverwaltung
@@ -88,4 +89,4 @@ Die automatisierten Tests in `tests/` umfassen:
 |---|---|
 | Release 2.0.0 | Veröffentlicht am 29.10.2026 |
 | Unvollständiges Release 1.1.1 | Entfernt |
-| Code-Signierung | Bei der SignPath Foundation beantragt; Workflow vorbereitet |
+| Code-Signierung | Antrag bei der SignPath Foundation abgelehnt; Releases unsigniert mit Prüfsummen und Herkunftsnachweis; Workflow für eine spätere Signierung vorbereitet |

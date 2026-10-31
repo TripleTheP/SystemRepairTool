@@ -3,8 +3,10 @@
 Dieses Dokument beschreibt die Einrichtung der Code-Signierung für SystemRepairTool über das Open-Source-Programm
 der [SignPath Foundation](https://signpath.org).
 
-**Status:** Antrag gestellt am 29.10.2026. Bis zur Bewilligung und Einrichtung werden Releases unsigniert, jedoch mit
-Prüfsummen und Herkunftsnachweis veröffentlicht.
+**Status:** Der Antrag vom 29.10.2026 wurde abgelehnt. Releases werden daher unsigniert, jedoch mit Prüfsummen und
+Herkunftsnachweis veröffentlicht. Die Vorbereitung im Workflow bleibt bestehen und ist ohne hinterlegte
+Zugangsdaten wirkungslos. Ein erneuter Antrag ist sinnvoll, sobald das Projekt eine größere Verbreitung nachweisen
+kann (Downloads, Sterne, Erwähnungen).
 
 ## Hintergrund
 
@@ -22,7 +24,7 @@ aktiv, sobald die Zugangsdaten im Repository hinterlegt sind.
 | Zwei-Faktor-Authentifizierung für alle beteiligten Konten | erforderlich |
 | Öffentliches Repository unter einer OSI-anerkannten Lizenz | erfüllt (GPL-3.0) |
 | Veröffentlichte Releases | erfüllt |
-| Abschnitt „Code signing policy“ in der README | erfüllt |
+| Abschnitt „Code signing policy“ in der README (Hinweis „Free code signing provided by SignPath.io, certificate by SignPath Foundation“, Rollen, Datenschutzhinweis) | nach der Ablehnung entfernt; für einen erneuten Antrag wieder ergänzen |
 | Datenschutzhinweis | erfüllt (README, Abschnitt „Datenschutz“) |
 
 ## 1. Antrag
